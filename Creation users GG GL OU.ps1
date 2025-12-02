@@ -13,17 +13,18 @@ $CSVPath = ".\EmployesL2.csv"
 # *** DÉLIMITEUR ***
 # Mettez "," si votre fichier est séparé par des virgules (comme votre exemple texte)
 # Mettez ";" si c'est un CSV Excel standard français.
-$CSVDelimiter = "," 
+$CSVDelimiter = ";" 
 
-$ServerDC = "ADAG4.agence4.local" 
-$BaseDN = "DC=agence4,DC=local"
-$ADDomain = "agence4.local" 
+$ServerDC = "ADAG4.espagne.lan" 
+$BaseDN = "DC=espagne,DC=lan"
+$ADDomain = "espagne.lan" 
 $MaxLenSamAccountName = 13
 
 # ------------------------------------------------------------
 # 2. TABLES DE CORRESPONDANCE
 # ------------------------------------------------------------
 $DepartmentToOU = @{
+    "Direction"                         = "Direction"
     "Site1/Marketing"                   = "Direction/Marketing/Site 1"
     "Site2/Marketing"                   = "Direction/Marketing/Site 2"
     "Site3/Marketing"                   = "Direction/Marketing/Site 3"
