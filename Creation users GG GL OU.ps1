@@ -13,7 +13,7 @@ $CSVPath = ".\EmployesL2.csv"
 # *** DÉLIMITEUR ***
 # Mettez "," si votre fichier est séparé par des virgules (comme votre exemple texte)
 # Mettez ";" si c'est un CSV Excel standard français.
-$CSVDelimiter = ";" 
+$CSVDelimiter = "," 
 
 $ServerDC = "ADAG4.espagne.lan" 
 $BaseDN = "DC=espagne,DC=lan"
@@ -173,32 +173,36 @@ function Create-OUHierarchy {
         $ouName = $ou.Trim()
         $ouDN = "OU=$ouName,$currentDN"
 
-        # Création OU
+        # 1. Création OU
         if (-not (Get-ADOrganizationalUnit -Filter "Name -eq '$ouName'" -SearchBase $currentDN -ErrorAction SilentlyContinue)) {
             New-ADOrganizationalUnit -Name $ouName -Path $currentDN -Server $ServerDC
             Write-Host "OU créée : $ouDN" -ForegroundColor Cyan
         }
 
-        # Création GG
+        # 2. Création GG
         $ggName = "$ouName-GG"
         if (-not (Get-ADGroup -Filter "Name -eq '$ggName'" -SearchBase $ouDN -ErrorAction SilentlyContinue)) {
             New-ADGroup -Name $ggName -SamAccountName $ggName -GroupScope Global -GroupCategory Security -Path $ouDN -Server $ServerDC
             Write-Host "GG créé : $ggName" -ForegroundColor Cyan
         }
 
-        # Création GL et Imbrication
-        foreach ($suf in @("_R", "_RW")) {
-            $glName = "GL_$ouName$suf"
-            if (-not (Get-ADGroup -Filter "Name -eq '$glName'" -SearchBase $ouDN -ErrorAction SilentlyContinue)) {
-                New-ADGroup -Name $glName -SamAccountName $glName -GroupScope DomainLocal -GroupCategory Security -Path $ouDN -Server $ServerDC
-                Write-Host "GL créé : $glName" -ForegroundColor Cyan
-            }
-            try {
-                Add-ADGroupMember -Identity $glName -Members $ggName -Server $ServerDC -ErrorAction Stop
-            } catch {} 
+        # 3. Création GL (Unique)
+        $glName = "GL_$ouName"
+        if (-not (Get-ADGroup -Filter "Name -eq '$glName'" -SearchBase $ouDN -ErrorAction SilentlyContinue)) {
+            New-ADGroup -Name $glName -SamAccountName $glName -GroupScope DomainLocal -GroupCategory Security -Path $ouDN -Server $ServerDC
+            Write-Host "GL créé : $glName" -ForegroundColor Cyan
         }
-        $currentDN = $ouDN
-    }
+        
+        # 4. Imbrication (GG dans GL)
+        try {
+            Add-ADGroupMember -Identity $glName -Members $ggName -Server $ServerDC -ErrorAction Stop
+        } catch {} 
+
+        # IMPORTANT : Cette ligne doit être DANS la boucle foreach
+        # Elle permet de descendre d'un niveau pour le prochain tour de boucle
+        $currentDN = $ouDN 
+
+    } # Fin du foreach (C'est ici qu'il faut fermer la boucle)
 }
 
 # ------------------------------------------------------------
